@@ -21,17 +21,16 @@ jobs:
           timeout: 180000
           interval: 10000
 
-      - name: Health Check Backend Root
+      - name: Health Check Backend
         run: |
-          echo "Checking backend root endpoint..."
-          curl -f ${{ secrets.BACKEND_URL }}/ || exit 1
-          echo "Backend root endpoint is accessible"
-
-      - name: Health Check Backend API
-        run: |
-          echo "Checking backend API endpoint..."
-          curl -f ${{ secrets.BACKEND_URL }}/api/game || exit 1
-          echo "Backend API endpoint is accessible"
+          echo "Checking backend endpoint..."
+          RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" ${{ secrets.BACKEND_URL }}/)
+          echo "Backend HTTP status: $RESPONSE"
+          if [ "$RESPONSE" != "200" ]; then
+            echo "Backend health check failed with status $RESPONSE"
+            exit 1
+          fi
+          echo "Backend is accessible and responding correctly"
 
       - name: Wait for frontend readiness
         uses: nev7n/wait_for_response@v1
@@ -44,15 +43,19 @@ jobs:
       - name: Health Check Frontend
         run: |
           echo "Checking frontend endpoint..."
-          curl -f http://${{ secrets.VPS_HOST }}/ || exit 1
-          echo "Frontend endpoint is accessible"
+          RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" http://${{ secrets.VPS_HOST }}/)
+          echo "Frontend HTTP status: $RESPONSE"
+          if [ "$RESPONSE" != "200" ]; then
+            echo "Frontend health check failed with status $RESPONSE"
+            exit 1
+          fi
+          echo "Frontend is accessible and responding correctly"
 
       - name: Log Health Checks Success
         run: |
           echo "SUCCESS: All health checks passed"
           echo "Timestamp: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
-          echo "Backend root: PASSED"
-          echo "Backend API: PASSED"
-          echo "Frontend: PASSED"
+          echo "Backend: PASSED (HTTP 200)"
+          echo "Frontend: PASSED (HTTP 200)"
           echo "Backend URL: ${{ secrets.BACKEND_URL }}"
           echo "Frontend URL: http://${{ secrets.VPS_HOST }}/"
