@@ -17,6 +17,7 @@ jobs:
         with:
           url: ${{ secrets.RENDER_DEPLOY_HOOK }}
           method: POST
+          timeout: 30000
 
   build-and-deploy-frontend:
     name: Build and Deploy Frontend to VPS
