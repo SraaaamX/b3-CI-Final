@@ -9,6 +9,10 @@ on:
       - 'v*'
   workflow_dispatch:
 
+permissions:
+  contents: read
+  statuses: write
+
 jobs:
   deploy-backend:
     name: Step 1 - Deploy Backend

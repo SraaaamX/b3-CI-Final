@@ -51,20 +51,11 @@ jobs:
             
             console.log('Deployment completed successfully');
 
-      - name: Update commit status
-        uses: actions/github-script@v7
-        with:
-          script: |
-            github.rest.repos.createCommitStatus({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              sha: '${{ inputs.commit-sha }}',
-              state: 'success',
-              description: 'Deployment completed successfully',
-              context: 'CI/CD Pipeline'
-            });
-            console.log('Deployment successful for version ${{ inputs.version }}');
-            console.log('All services are operational and health checks passed');
+      - name: Log deployment success
+        run: |
+          echo "Deployment successful for version ${{ inputs.version }}"
+          echo "All services are operational and health checks passed"
+          echo "Commit: ${{ inputs.commit-sha }}"
 
   notify-failure:
     name: Notify Deployment Failure
@@ -89,18 +80,10 @@ jobs:
             
             core.setFailed('Deployment pipeline failed');
 
-      - name: Update commit status
-        uses: actions/github-script@v7
-        with:
-          script: |
-            github.rest.repos.createCommitStatus({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              sha: '${{ inputs.commit-sha }}',
-              state: 'failure',
-              description: 'Deployment failed - rollback may be required',
-              context: 'CI/CD Pipeline'
-            });
-            console.error('ALERT: Deployment failed for version ${{ inputs.version }}');
-            console.error('Check the logs above for details');
-            console.error('Rollback may be required');
+      - name: Log deployment failure
+        run: |
+          echo "ALERT: Deployment failed for version ${{ inputs.version }}"
+          echo "Check the logs above for details"
+          echo "Rollback may be required"
+          echo "Commit: ${{ inputs.commit-sha }}"
+          exit 1
