@@ -57,6 +57,10 @@ jobs:
             -e "ssh -o StrictHostKeyChecking=no" \
             admin-dashboard/dist/ \
             ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:${{ secrets.VPS_DEPLOY_PATH }}/
+          rsync -avz \
+            -e "ssh -o StrictHostKeyChecking=no" \
+            ecosystem.config.js \
+            ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:${{ secrets.VPS_DEPLOY_PATH }}/
 
       - name: Restart PM2
         uses: appleboy/ssh-action@v1.0.3
