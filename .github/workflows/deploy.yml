@@ -39,6 +39,10 @@ jobs:
         working-directory: admin-dashboard
         run: npm ci
 
+      - name: Create .env file
+        working-directory: admin-dashboard
+        run: echo "VITE_BACKEND_URL=${{ secrets.BACKEND_URL }}" > .env
+
       - name: Build frontend
         working-directory: admin-dashboard
         run: npm run build
