@@ -18,8 +18,8 @@ jobs:
         with:
           url: ${{ secrets.BACKEND_URL }}/
           responseCode: 200
-          timeout: 180000
-          interval: 10000
+          timeout: 60000
+          interval: 5000
 
       - name: Health Check Backend
         id: backend-check
@@ -44,8 +44,8 @@ jobs:
         with:
           url: http://${{ secrets.VPS_HOST }}/
           responseCode: 200
-          timeout: 60000
-          interval: 5000
+          timeout: 30000
+          interval: 3000
 
       - name: Health Check Frontend
         id: frontend-check
