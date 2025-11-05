@@ -3,7 +3,7 @@ module.exports = {
     {
       name: 'frontend-app',
       script: 'npx',
-      args: 'serve -s . -l 3001',
+      args: 'serve -s . -l 80',
       cwd: process.env.VPS_DEPLOY_PATH || '/var/www/frontend',
       instances: 1,
       autorestart: true,
@@ -11,7 +11,7 @@ module.exports = {
       max_memory_restart: '1G',
       env: {
         NODE_ENV: 'production',
-        PORT: 3001
+        PORT: 80
       },
       error_file: './logs/err.log',
       out_file: './logs/out.log',
