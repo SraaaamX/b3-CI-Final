@@ -19,6 +19,12 @@ jobs:
           method: POST
           timeout: 30000
 
+      - name: Log Backend Deployment Success
+        run: |
+          echo "SUCCESS: Backend deployment to Render completed"
+          echo "Timestamp: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+          echo "Backend URL: ${{ secrets.BACKEND_URL }}"
+
   build-and-deploy-frontend:
     name: Build and Deploy Frontend to VPS
     runs-on: ubuntu-latest
@@ -51,6 +57,13 @@ jobs:
         with:
           cmd: --cwd admin-dashboard build
 
+      - name: Log Frontend Build Success
+        run: |
+          echo "SUCCESS: Frontend build completed"
+          echo "Timestamp: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+          echo "Build output: admin-dashboard/dist/"
+          echo "Target backend: ${{ secrets.BACKEND_URL }}"
+
       - name: Deploy to VPS via rsync
         uses: burnett01/rsync-deployments@7.0.1
         with:
@@ -71,6 +84,14 @@ jobs:
           remote_user: ${{ secrets.VPS_USER }}
           remote_key: ${{ secrets.VPS_SSH_KEY }}
 
+      - name: Log VPS Transfer Success
+        run: |
+          echo "SUCCESS: Files transferred to VPS"
+          echo "Timestamp: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+          echo "VPS Host: ${{ secrets.VPS_HOST }}"
+          echo "Deploy Path: ${{ secrets.VPS_DEPLOY_PATH }}"
+          echo "User: ${{ secrets.VPS_USER }}"
+
       - name: Restart PM2
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -83,3 +104,15 @@ jobs:
             pm2 start ecosystem.config.js
             pm2 save
             pm2 status
+            echo "SUCCESS: PM2 restarted"
+            echo "Timestamp: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+            echo "Deploy Path: ${{ secrets.VPS_DEPLOY_PATH }}"
+
+      - name: Log Deployment Complete
+        run: |
+          echo "SUCCESS: Full deployment pipeline completed"
+          echo "Timestamp: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+          echo "Backend URL: ${{ secrets.BACKEND_URL }}"
+          echo "Frontend URL: http://${{ secrets.VPS_HOST }}/"
+          echo "VPS Host: ${{ secrets.VPS_HOST }}"
+          echo "Deploy Path: ${{ secrets.VPS_DEPLOY_PATH }}"

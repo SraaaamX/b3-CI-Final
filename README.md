@@ -2,174 +2,90 @@
 
 Complete fullstack application with automated deployment using GitHub Actions.
 
-## Tech Stack
+## Production URLs
 
-**Frontend**: React + TypeScript + Vite + TailwindCSS  
-**Backend**: Node.js + Express + MongoDB  
-**Deployment**: Render (Backend) + VPS with PM2 (Frontend)  
-**CI/CD**: GitHub Actions
+- **Frontend**: http://185.98.128.198/
+- **Backend**: https://backend-api-wy1r.onrender.com/
 
-## Project Structure
+## Deployment Architecture
 
-```
-admin-dashboard/     # React frontend
-backend-API/         # Node.js backend
-deployment/          # Deployment configuration
-  ecosystem.config.js  # PM2 configuration
-.github/workflows/   # CI/CD pipeline
-```
+### Overview
 
-## Local Development
+This project uses a **dual-platform deployment strategy** with automated CI/CD:
 
-### Backend Setup
-
-```bash
-cd backend-API
-npm install
-```
-
-Create `.env` file:
-```
-MONGO_URI=your_mongodb_connection_string
-PORT=3000
-JWT_SECRET=your_secret_key
-NODE_ENV=development
-```
-
-Start server:
-```bash
-npm run dev
-```
-
-Backend runs on http://localhost:3000
-
-### Frontend Setup
-
-```bash
-cd admin-dashboard
-npm install
-```
-
-Create `.env` file:
-```
-VITE_BACKEND_URL=http://localhost:3000
-```
-
-Start development server:
-```bash
-npm run dev
-```
-
-Frontend runs on http://localhost:5173
-
-## Deployment
-
-### Required GitHub Secrets
-
-Go to repository Settings > Secrets and variables > Actions and add:
-
-- `RENDER_DEPLOY_HOOK` - Render deploy hook URL
-- `BACKEND_URL` - Backend URL (https://your-app.onrender.com)
-- `VPS_HOST` - VPS IP address
-- `VPS_USER` - SSH username
-- `VPS_SSH_KEY` - SSH private key
-- `VPS_DEPLOY_PATH` - Deployment path (/var/www/frontend)
-
-### MongoDB Atlas Setup
-
-1. Create account at mongodb.com/cloud/atlas
-2. Create free cluster
-3. Create database user
-4. Allow network access (0.0.0.0/0)
-5. Get connection string
-6. Add to Render environment variables
-
-### Render Setup
-
-1. Create account at render.com
-2. Create new Web Service
-3. Connect GitHub repository
-4. Configure:
-   - Root Directory: backend-API
-   - Build Command: npm install
-   - Start Command: node index.js
-5. Add environment variables (MONGO_URI, PORT, JWT_SECRET, NODE_ENV)
-6. Get deploy hook from Settings
-
-### VPS Setup
-
-```bash
-apt update && apt upgrade -y
-curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
-apt install -y nodejs
-npm install -g pm2 serve
-setcap 'cap_net_bind_service=+ep' /usr/bin/node
-apt install -y ufw
-ufw allow 22/tcp
-ufw allow 80/tcp
-ufw --force enable
-mkdir -p /var/www/frontend/logs
-```
+- **Backend**: Deployed on **Render** (PaaS) with automatic builds and zero-downtime deployments
+- **Frontend**: Deployed on **VPS** (185.98.128.198) using **PM2** process manager with **serve** static file server
+- **CI/CD**: **GitHub Actions** orchestrates the entire deployment pipeline
 
 ## CI/CD Pipeline
 
-The pipeline triggers automatically on push to main branch.
+### Pipeline Triggers
 
-**Step 1**: Deploy backend to Render  
-**Step 2**: Build React frontend  
-**Step 3**: Deploy frontend to VPS via rsync  
-**Step 4**: Restart PM2
+The deployment pipeline is triggered by:
 
-## Production URLs
+1. **Automatic Trigger**: Any push to `main` or `master` branch
+2. **Manual Trigger**: Via GitHub Actions UI using `workflow_dispatch` event
 
-Frontend: http://185.98.128.198  
-Backend: https://backend-api.onrender.com
+### Pipeline Steps
 
-## Useful Commands
+**Job 1: Deploy Backend**
+- Triggers Render deploy hook via HTTP POST
+
+**Job 2: Build & Deploy Frontend** (runs after Job 1)
+1. Checkout code
+2. Setup Node.js v20
+3. Install dependencies
+4. Build React app
+5. Deploy to VPS via rsync
+6. Deploy PM2 config
+7. Restart PM2
+
+### Secrets Used
+
+**GitHub Secrets** (Repository Settings → Secrets and variables → Actions):
+- `RENDER_DEPLOY_HOOK`
+- `BACKEND_URL`
+- `VPS_HOST`
+- `VPS_USER`
+- `VPS_SSH_KEY`
+- `VPS_DEPLOY_PATH`
+
+## Rollback Procedures
+
+### Backend Rollback (Render)
+
+Go to Render dashboard → Service → Events tab → Click "Rollback" on previous deployment
+
+### Frontend Rollback (VPS)
 
 ```bash
-# Check PM2 status
-ssh root@185.98.128.198
-pm2 status
-pm2 logs frontend-app
-
-# Restart PM2
-pm2 restart frontend-app
-
-# Manual deployment
+# Revert code and redeploy
+git revert <commit-hash>
 git push origin main
+# Pipeline will automatically redeploy
 ```
 
-## API Endpoints
+## Validation Checklist
 
-**Users**
-- POST /api/users/register
-- POST /api/users/login
+### Pre-Deployment
+- [ ] Code builds successfully locally
+- [ ] All GitHub secrets are configured
+- [ ] No sensitive data in code
 
-**Games**
-- GET /api/game
-- POST /api/game
-- GET /api/game/:id
-- PUT /api/game/:id
-- DELETE /api/game/:id
+### Post-Deployment
+- [ ] GitHub Actions workflow completed without errors
+- [ ] Backend accessible: https://backend-api-wy1r.onrender.com/
+- [ ] Frontend accessible: http://185.98.128.198/
+- [ ] API endpoints respond correctly
+- [ ] Frontend can communicate with backend
+- [ ] PM2 process running on VPS
 
-**Reviews**
-- GET /api/review
-- POST /api/review
-- GET /api/review/:id
-- PUT /api/review/:id
-- DELETE /api/review/:id
+### Verification Commands
 
-**Game Lists**
-- GET /api/gamelist
-- POST /api/gamelist
-- GET /api/gamelist/:id
-- PUT /api/gamelist/:id
-- DELETE /api/gamelist/:id
+```bash
+# Test backend
+curl https://backend-api-wy1r.onrender.com/api/game
 
-**Genres**
-- GET /api/genre
-- POST /api/genre
-- GET /api/genre/:id
-- PUT /api/genre/:id
-- DELETE /api/genre/:id
+# Check VPS PM2 status
+ssh root@185.98.128.198 "pm2 status"
+```
