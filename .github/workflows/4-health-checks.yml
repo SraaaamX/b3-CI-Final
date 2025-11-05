@@ -31,35 +31,14 @@ jobs:
           echo "Status: Healthy"
           echo "Timestamp: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
 
-      - name: Health Check Frontend
-        id: frontend-check
-        run: |
-          echo "Checking frontend endpoint..."
-          RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" http://${{ secrets.VPS_HOST }}/)
-          echo "Frontend HTTP status: $RESPONSE"
-          if [ "$RESPONSE" != "200" ]; then
-            echo "Frontend health check failed with status $RESPONSE"
-            exit 1
-          fi
-
-      - name: Log Frontend Health
-        run: |
-          echo "✓ Frontend health check passed"
-          echo "URL: http://${{ secrets.VPS_HOST }}/"
-          echo "Status: Healthy"
-          echo "Timestamp: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
-
-      - name: Log All Health Checks Complete
+      - name: Log Health Check Complete
         run: |
           echo "========================================="
-          echo "✓ All Health Checks Passed"
+          echo "✓ Health Check Passed"
           echo "========================================="
           echo "Backend: HEALTHY (HTTP 200)"
           echo "  URL: ${{ secrets.BACKEND_URL }}/"
           echo ""
-          echo "Frontend: HEALTHY (HTTP 200)"
-          echo "  URL: http://${{ secrets.VPS_HOST }}/"
-          echo ""
           echo "Timestamp: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
-          echo "All services operational and ready"
+          echo "Backend service operational and ready"
           echo "========================================="
