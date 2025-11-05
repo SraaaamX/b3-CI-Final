@@ -70,5 +70,7 @@ jobs:
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
             cd ${{ secrets.VPS_DEPLOY_PATH }}
-            pm2 restart frontend-app || pm2 start ecosystem.config.js --only frontend-app
+            pm2 delete frontend-app || true
+            pm2 start ecosystem.config.js
             pm2 save
+            pm2 status
