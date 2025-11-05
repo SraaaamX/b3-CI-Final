@@ -41,8 +41,6 @@ jobs:
 
       - name: Build frontend
         working-directory: admin-dashboard
-        env:
-          VITE_BACKEND_URL: ${{ secrets.BACKEND_URL }}
         run: npm run build
 
       - name: Setup SSH key
