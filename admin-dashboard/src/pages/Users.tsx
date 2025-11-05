@@ -34,7 +34,7 @@ export default function Users() {
         return;
       }
 
-      const res = await axios.get(process.env.backend_url+"/api/users/", {
+      const res = await axios.get(import.meta.env.VITE_BACKEND_URL+"/api/users/", {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -62,7 +62,7 @@ export default function Users() {
       if (!token) return alert("Token manquant.");
 
       const res = await axios.post(
-        process.env.backend_url+"/api/users/register",
+        import.meta.env.VITE_BACKEND_URL+"/api/users/register",
         {
           name: newUser.name,
           nickname: newUser.nickname,

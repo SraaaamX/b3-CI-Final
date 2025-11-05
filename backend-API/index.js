@@ -10,7 +10,7 @@ const gameListRoutes = require('./routes/gameListRoutes');
 const genreRoutes = require('./routes/genreRoutes');
 
 const app = express();
-const port = 3000;
+const port = process.env.PORT;
 
 //middlewares
 app.use(cors());
@@ -27,15 +27,15 @@ app.get('/', (req, res) => {
 });
 
 mongoose.connect(process.env.MONGO_URI)
-.then(() => {
-    console.log('Connected to MongoDB');
-})
-.catch((error) => {
-    console.error('Error connecting to MongoDB:', error);
-});
+    .then(() => {
+        console.log('Connected to MongoDB');
+    })
+    .catch((error) => {
+        console.error('Error connecting to MongoDB:', error);
+    });
 
 
 
-app.listen (port, () => {
+app.listen(port, () => {
     console.log(`Serveur online at http://localhost:${port}`);
 });

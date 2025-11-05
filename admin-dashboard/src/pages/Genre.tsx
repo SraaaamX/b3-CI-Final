@@ -27,7 +27,7 @@ export default function Genres() {
           return;
         }
 
-        const res = await axios.get(process.env.backend_url+"/api/genre/all", {
+        const res = await axios.get(import.meta.env.VITE_BACKEND_URL+"/api/genre/all", {
           headers: { Authorization: `Bearer ${token}` },
         });
 
@@ -56,7 +56,7 @@ export default function Genres() {
       if (!token) return alert("Token manquant.");
 
       const res = await axios.post(
-        process.env.backend_url+"/api/genre/new",
+        import.meta.env.VITE_BACKEND_URL+"/api/genre/new",
         { name: newGenre.name },
         {
           headers: { Authorization: `Bearer ${token}` },

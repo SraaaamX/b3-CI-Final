@@ -15,22 +15,22 @@ const Login = () => {
     setMessage(null);
 
     try {
-      const res = await axios.post(process.env.backend_url+"/api/users/register", {
+      const res = await axios.post(import.meta.env.VITE_BACKEND_URL + "/api/users/register", {
         name,
         nickname,
         email,
         password,
       });
 
-      const {message } = res.data;
+      const { message } = res.data;
 
 
       // ✅ Message de succès
       setMessage(message || "Compte créé avec success ✅");
 
-      
-        navigate("/login");
-      
+
+      navigate("/login");
+
     } catch (err: unknown) {
       if (axios.isAxiosError(err)) {
         setMessage(err.response?.data?.message || "Erreur de creation de compte ❌");
@@ -54,10 +54,10 @@ const Login = () => {
           type="text"
           placeholder="Nom"
           value={name}
-          onChange={(e) => setName(e.target.value)} 
+          onChange={(e) => setName(e.target.value)}
           className="w-full p-2 mb-4 rounded bg-gray-700 border border-gray-600 focus:outline-none focus:border-blue-500"
           required
-        />  
+        />
 
         <input
           type="text"
@@ -95,9 +95,8 @@ const Login = () => {
 
         {message && (
           <p
-            className={`mt-4 text-center ${
-              message.includes("✅") ? "text-green-400" : "text-red-400"
-            }`}
+            className={`mt-4 text-center ${message.includes("✅") ? "text-green-400" : "text-red-400"
+              }`}
           >
             {message}
           </p>
