@@ -28,34 +28,48 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
-            const summary = `## Deployment Successful
+            const summary = `## ✓ Deployment Successful
             
             **Version:** ${{ inputs.version }}
             **Commit:** ${{ inputs.commit-sha }}
             **Timestamp:** ${new Date().toISOString()}
             
-            ### Services
-            - **Backend:** ${{ secrets.BACKEND_URL }}
-            - **Frontend:** http://${{ secrets.VPS_HOST }}/
+            ### Services Status
+            | Service | Status | URL |
+            |---------|--------|-----|
+            | Backend | ✓ HEALTHY | ${{ secrets.BACKEND_URL }} |
+            | Frontend | ✓ HEALTHY | http://${{ secrets.VPS_HOST }}/ |
             
-            ### Status
-            - Backend health check: PASSED
-            - Frontend health check: PASSED
-            - PM2 process: RUNNING
+            ### Deployment Steps
+            - ✓ Backend deployed to Render
+            - ✓ Frontend built successfully
+            - ✓ Frontend deployed to VPS
+            - ✓ PM2 process reloaded (zero-downtime)
+            - ✓ Health checks passed
             
-            All services are operational.`;
+            All services are operational and ready to serve traffic.`;
             
             await core.summary
               .addRaw(summary)
               .write();
             
-            console.log('Deployment completed successfully');
+            console.log('✓ Deployment summary created');
 
       - name: Log deployment success
         run: |
-          echo "Deployment successful for version ${{ inputs.version }}"
-          echo "All services are operational and health checks passed"
+          echo "========================================="
+          echo "✓ DEPLOYMENT SUCCESSFUL"
+          echo "========================================="
+          echo "Version: ${{ inputs.version }}"
           echo "Commit: ${{ inputs.commit-sha }}"
+          echo "Timestamp: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+          echo ""
+          echo "Services:"
+          echo "  Backend: ${{ secrets.BACKEND_URL }}"
+          echo "  Frontend: http://${{ secrets.VPS_HOST }}/"
+          echo ""
+          echo "All services operational and health checks passed"
+          echo "========================================="
 
   notify-failure:
     name: Notify Deployment Failure
@@ -66,24 +80,43 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
-            const summary = `## Deployment Failed
+            const summary = `## ✗ Deployment Failed
             
             **Version:** ${{ inputs.version }}
             **Commit:** ${{ inputs.commit-sha }}
             **Timestamp:** ${new Date().toISOString()}
             
-            Please check the logs for details. Rollback may be required.`;
+            ### Actions Required
+            1. Check the workflow logs for the failed step
+            2. Review error messages and stack traces
+            3. Consider rolling back if needed
+            
+            ### Rollback Options
+            - **Backend**: Redeploy previous version via Render dashboard
+            - **Frontend**: Revert commit and push, or manual PM2 rollback
+            - **Both**: Use git revert and trigger new deployment
+            
+            Please investigate the failure before attempting another deployment.`;
             
             await core.summary
               .addRaw(summary)
               .write();
             
             core.setFailed('Deployment pipeline failed');
+            console.log('✗ Failure summary created');
 
       - name: Log deployment failure
         run: |
-          echo "ALERT: Deployment failed for version ${{ inputs.version }}"
-          echo "Check the logs above for details"
-          echo "Rollback may be required"
+          echo "========================================="
+          echo "✗ DEPLOYMENT FAILED"
+          echo "========================================="
+          echo "Version: ${{ inputs.version }}"
           echo "Commit: ${{ inputs.commit-sha }}"
+          echo "Timestamp: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+          echo ""
+          echo "ALERT: Check the logs above for details"
+          echo "Action required: Investigate failure and consider rollback"
+          echo ""
+          echo "Rollback documentation: See README.md"
+          echo "========================================="
           exit 1

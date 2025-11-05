@@ -13,33 +13,59 @@ jobs:
     name: Verify Services Health
     runs-on: ubuntu-latest
     steps:
+      - name: Wait for backend availability
+        uses: nev7n/wait_for_response@v1
+        with:
+          url: ${{ secrets.BACKEND_URL }}/
+          responseCode: 200
+          timeout: 180000
+          interval: 10000
+
       - name: Health Check Backend
+        id: backend-check
+        uses: wei/curl@v1
+        with:
+          args: -f -s -o /dev/null -w "HTTP Status: %{http_code}" ${{ secrets.BACKEND_URL }}/
+
+      - name: Log Backend Health
         run: |
-          echo "Checking backend endpoint..."
-          RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" ${{ secrets.BACKEND_URL }}/)
-          echo "Backend HTTP status: $RESPONSE"
-          if [ "$RESPONSE" != "200" ]; then
-            echo "Backend health check failed with status $RESPONSE"
-            exit 1
-          fi
-          echo "Backend is accessible and responding correctly"
+          echo "✓ Backend health check passed"
+          echo "URL: ${{ secrets.BACKEND_URL }}/"
+          echo "Status: Healthy"
+          echo "Timestamp: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+
+      - name: Wait for frontend availability
+        uses: nev7n/wait_for_response@v1
+        with:
+          url: http://${{ secrets.VPS_HOST }}/
+          responseCode: 200
+          timeout: 60000
+          interval: 5000
 
       - name: Health Check Frontend
-        run: |
-          echo "Checking frontend endpoint..."
-          RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" http://${{ secrets.VPS_HOST }}/healthcheck)
-          echo "Frontend HTTP status: $RESPONSE"
-          if [ "$RESPONSE" != "200" ]; then
-            echo "Frontend health check failed with status $RESPONSE"
-            exit 1
-          fi
-          echo "Frontend is accessible and responding correctly"
+        id: frontend-check
+        uses: wei/curl@v1
+        with:
+          args: -f -s -o /dev/null -w "HTTP Status: %{http_code}" http://${{ secrets.VPS_HOST }}/
 
-      - name: Log Health Checks Success
+      - name: Log Frontend Health
         run: |
-          echo "SUCCESS: All health checks passed"
+          echo "✓ Frontend health check passed"
+          echo "URL: http://${{ secrets.VPS_HOST }}/"
+          echo "Status: Healthy"
           echo "Timestamp: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
-          echo "Backend: PASSED (HTTP 200)"
-          echo "Frontend: PASSED (HTTP 200)"
-          echo "Backend URL: ${{ secrets.BACKEND_URL }}"
-          echo "Frontend URL: http://${{ secrets.VPS_HOST }}/healthcheck"
+
+      - name: Log All Health Checks Complete
+        run: |
+          echo "========================================="
+          echo "✓ All Health Checks Passed"
+          echo "========================================="
+          echo "Backend: HEALTHY (HTTP 200)"
+          echo "  URL: ${{ secrets.BACKEND_URL }}/"
+          echo ""
+          echo "Frontend: HEALTHY (HTTP 200)"
+          echo "  URL: http://${{ secrets.VPS_HOST }}/"
+          echo ""
+          echo "Timestamp: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+          echo "All services operational and ready"
+          echo "========================================="

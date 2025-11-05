@@ -13,21 +13,32 @@ jobs:
     name: Deploy Backend to Render
     runs-on: ubuntu-latest
     steps:
-      - name: Trigger Render Deploy
+      - name: Trigger Render Deploy Hook
+        id: render-deploy
         uses: fjogeleit/http-request-action@v1
         with:
           url: ${{ secrets.RENDER_DEPLOY_HOOK }}
           method: POST
           timeout: 30000
+          customHeaders: '{"Content-Type": "application/json"}'
 
-      - name: Wait for Render build
+      - name: Log Deploy Trigger
         run: |
-          echo "Waiting for Render to build and deploy backend..."
-          echo "This typically takes 2-3 minutes"
-          sleep 120
-
-      - name: Log Backend Deployment Success
-        run: |
-          echo "SUCCESS: Backend deployment to Render completed"
+          echo "✓ Render deploy hook triggered successfully"
+          echo "Response: ${{ steps.render-deploy.outputs.response }}"
           echo "Timestamp: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+
+      - name: Wait for Render Build
+        uses: juliangruber/sleep-action@v2
+        with:
+          time: 120s
+
+      - name: Log Backend Deployment Complete
+        run: |
+          echo "========================================="
+          echo "✓ Backend Deployment Completed"
+          echo "========================================="
           echo "Backend URL: ${{ secrets.BACKEND_URL }}"
+          echo "Timestamp: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+          echo "Status: Ready for health checks"
+          echo "========================================="

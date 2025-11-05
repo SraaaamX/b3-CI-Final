@@ -29,7 +29,12 @@ jobs:
 
       - name: Install dependencies
         working-directory: admin-dashboard
-        run: npm ci
+        run: npm ci --prefer-offline --no-audit
+
+      - name: Log Dependencies Installed
+        run: |
+          echo "✓ Dependencies installed successfully"
+          echo "Timestamp: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
 
       - name: Create .env file
         uses: SpicyPizza/create-envfile@v2.0
@@ -37,23 +42,42 @@ jobs:
           envkey_VITE_BACKEND_URL: ${{ secrets.BACKEND_URL }}
           directory: admin-dashboard
           file_name: .env
+          fail_on_empty: true
+
+      - name: Log Environment Configuration
+        run: |
+          echo "✓ Environment file created"
+          echo "Backend URL configured: ${{ secrets.BACKEND_URL }}"
 
       - name: Build frontend
+        id: build
         working-directory: admin-dashboard
         run: npm run build
+
+      - name: Log Build Complete
+        run: |
+          echo "✓ Frontend build completed successfully"
+          echo "Build directory: admin-dashboard/dist/"
+          echo "Timestamp: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: frontend-build
+          name: frontend-build-${{ github.sha }}
           path: admin-dashboard/dist/
           retention-days: 7
+          compression-level: 6
 
-      - name: Log Frontend Build Success
+      - name: Log Artifacts Uploaded
         id: build-status
         run: |
-          echo "SUCCESS: Frontend build completed"
-          echo "Timestamp: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+          echo "========================================="
+          echo "✓ Frontend Build Pipeline Completed"
+          echo "========================================="
           echo "Build output: admin-dashboard/dist/"
+          echo "Artifact name: frontend-build-${{ github.sha }}"
           echo "Target backend: ${{ secrets.BACKEND_URL }}"
+          echo "Retention: 7 days"
+          echo "Timestamp: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+          echo "========================================="
           echo "status=success" >> $GITHUB_OUTPUT

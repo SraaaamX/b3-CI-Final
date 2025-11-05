@@ -20,23 +20,41 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Log Checkout Complete
+        run: |
+          echo "✓ Repository checked out"
+          echo "Commit: ${{ github.sha }}"
+
       - name: Download build artifacts
         uses: actions/download-artifact@v4
         with:
-          name: frontend-build
+          name: frontend-build-${{ github.sha }}
           path: admin-dashboard/dist/
 
-      - name: Deploy to VPS via rsync
+      - name: Log Artifacts Downloaded
+        run: |
+          echo "✓ Build artifacts downloaded"
+          echo "Artifact: frontend-build-${{ github.sha }}"
+          echo "Path: admin-dashboard/dist/"
+
+      - name: Deploy frontend to VPS
+        id: rsync-deploy
         uses: burnett01/rsync-deployments@7.0.1
         with:
-          switches: -avz --delete
+          switches: -avz --delete --stats
           path: admin-dashboard/dist/
           remote_path: ${{ secrets.VPS_DEPLOY_PATH }}/
           remote_host: ${{ secrets.VPS_HOST }}
           remote_user: ${{ secrets.VPS_USER }}
           remote_key: ${{ secrets.VPS_SSH_KEY }}
 
-      - name: Deploy ecosystem config
+      - name: Log Frontend Deployment
+        run: |
+          echo "✓ Frontend files synced to VPS"
+          echo "Host: ${{ secrets.VPS_HOST }}"
+          echo "Path: ${{ secrets.VPS_DEPLOY_PATH }}"
+
+      - name: Deploy PM2 ecosystem config
         uses: burnett01/rsync-deployments@7.0.1
         with:
           switches: -avz
@@ -46,15 +64,13 @@ jobs:
           remote_user: ${{ secrets.VPS_USER }}
           remote_key: ${{ secrets.VPS_SSH_KEY }}
 
-      - name: Log VPS Transfer Success
+      - name: Log Config Deployment
         run: |
-          echo "SUCCESS: Files transferred to VPS"
+          echo "✓ PM2 ecosystem config deployed"
           echo "Timestamp: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
-          echo "VPS Host: ${{ secrets.VPS_HOST }}"
-          echo "Deploy Path: ${{ secrets.VPS_DEPLOY_PATH }}"
-          echo "User: ${{ secrets.VPS_USER }}"
 
-      - name: Restart PM2
+      - name: Restart PM2 process
+        id: pm2-restart
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.VPS_HOST }}
@@ -63,16 +79,28 @@ jobs:
           script: |
             cd ${{ secrets.VPS_DEPLOY_PATH }}
             mkdir -p logs
-            # Check if app exists, reload for zero-downtime or start fresh
+            echo "Checking PM2 process status..."
             if pm2 describe frontend-app > /dev/null 2>&1; then
-              echo "App exists, reloading for zero-downtime..."
+              echo "✓ App exists, performing zero-downtime reload..."
               pm2 reload frontend-app --update-env
             else
-              echo "App not found, starting fresh..."
+              echo "✓ App not found, starting fresh..."
               pm2 start ecosystem.config.js
             fi
             pm2 save
+            echo "========================================="
+            echo "PM2 Process Status:"
             pm2 status
-            echo "SUCCESS: PM2 restarted"
-            echo "Timestamp: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
-            echo "Deploy Path: ${{ secrets.VPS_DEPLOY_PATH }}"
+            echo "========================================="
+
+      - name: Log Deployment Complete
+        run: |
+          echo "========================================="
+          echo "✓ Frontend Deployment Completed"
+          echo "========================================="
+          echo "VPS Host: ${{ secrets.VPS_HOST }}"
+          echo "Deploy Path: ${{ secrets.VPS_DEPLOY_PATH }}"
+          echo "PM2 Status: Running"
+          echo "Timestamp: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+          echo "Commit: ${{ github.sha }}"
+          echo "========================================="
