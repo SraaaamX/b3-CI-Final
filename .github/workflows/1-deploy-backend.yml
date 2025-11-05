@@ -20,6 +20,12 @@ jobs:
           method: POST
           timeout: 30000
 
+      - name: Wait for Render build
+        run: |
+          echo "Waiting for Render to build and deploy backend..."
+          echo "This typically takes 2-3 minutes"
+          sleep 120
+
       - name: Log Backend Deployment Success
         run: |
           echo "SUCCESS: Backend deployment to Render completed"
