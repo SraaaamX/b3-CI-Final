@@ -23,9 +23,14 @@ jobs:
 
       - name: Health Check Backend
         id: backend-check
-        uses: wei/curl@v1
-        with:
-          args: -f -s -o /dev/null -w "HTTP Status: %{http_code}" ${{ secrets.BACKEND_URL }}/
+        run: |
+          echo "Checking backend endpoint..."
+          RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" ${{ secrets.BACKEND_URL }}/)
+          echo "Backend HTTP status: $RESPONSE"
+          if [ "$RESPONSE" != "200" ]; then
+            echo "Backend health check failed with status $RESPONSE"
+            exit 1
+          fi
 
       - name: Log Backend Health
         run: |
@@ -44,9 +49,14 @@ jobs:
 
       - name: Health Check Frontend
         id: frontend-check
-        uses: wei/curl@v1
-        with:
-          args: -f -s -o /dev/null -w "HTTP Status: %{http_code}" http://${{ secrets.VPS_HOST }}/
+        run: |
+          echo "Checking frontend endpoint..."
+          RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" http://${{ secrets.VPS_HOST }}/)
+          echo "Frontend HTTP status: $RESPONSE"
+          if [ "$RESPONSE" != "200" ]; then
+            echo "Frontend health check failed with status $RESPONSE"
+            exit 1
+          fi
 
       - name: Log Frontend Health
         run: |
