@@ -1,0 +1,59 @@
+name: Build Frontend
+
+on:
+  workflow_call:
+    secrets:
+      BACKEND_URL:
+        required: true
+    outputs:
+      build-status:
+        description: "Build status"
+        value: ${{ jobs.build-frontend.outputs.status }}
+
+jobs:
+  build-frontend:
+    name: Build Frontend Application
+    runs-on: ubuntu-latest
+    outputs:
+      status: ${{ steps.build-status.outputs.status }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: admin-dashboard/package-lock.json
+
+      - name: Install dependencies
+        working-directory: admin-dashboard
+        run: npm ci
+
+      - name: Create .env file
+        uses: SpicyPizza/create-envfile@v2.0
+        with:
+          envkey_VITE_BACKEND_URL: ${{ secrets.BACKEND_URL }}
+          directory: admin-dashboard
+          file_name: .env
+
+      - name: Build frontend
+        working-directory: admin-dashboard
+        run: npm run build
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-build
+          path: admin-dashboard/dist/
+          retention-days: 7
+
+      - name: Log Frontend Build Success
+        id: build-status
+        run: |
+          echo "SUCCESS: Frontend build completed"
+          echo "Timestamp: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+          echo "Build output: admin-dashboard/dist/"
+          echo "Target backend: ${{ secrets.BACKEND_URL }}"
+          echo "status=success" >> $GITHUB_OUTPUT

@@ -1,0 +1,106 @@
+name: Deployment Notifications
+
+on:
+  workflow_call:
+    inputs:
+      deployment-status:
+        required: true
+        type: string
+      version:
+        required: true
+        type: string
+      commit-sha:
+        required: true
+        type: string
+    secrets:
+      BACKEND_URL:
+        required: true
+      VPS_HOST:
+        required: true
+
+jobs:
+  notify-success:
+    name: Notify Deployment Success
+    runs-on: ubuntu-latest
+    if: inputs.deployment-status == 'success'
+    steps:
+      - name: Create deployment summary
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const summary = `## Deployment Successful
+            
+            **Version:** ${{ inputs.version }}
+            **Commit:** ${{ inputs.commit-sha }}
+            **Timestamp:** ${new Date().toISOString()}
+            
+            ### Services
+            - **Backend:** ${{ secrets.BACKEND_URL }}
+            - **Frontend:** http://${{ secrets.VPS_HOST }}/
+            
+            ### Status
+            - Backend health check: PASSED
+            - Frontend health check: PASSED
+            - PM2 process: RUNNING
+            
+            All services are operational.`;
+            
+            await core.summary
+              .addRaw(summary)
+              .write();
+            
+            console.log('Deployment completed successfully');
+
+      - name: Update commit status
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: '${{ inputs.commit-sha }}',
+              state: 'success',
+              description: 'Deployment completed successfully',
+              context: 'CI/CD Pipeline'
+            });
+            console.log('Deployment successful for version ${{ inputs.version }}');
+            console.log('All services are operational and health checks passed');
+
+  notify-failure:
+    name: Notify Deployment Failure
+    runs-on: ubuntu-latest
+    if: inputs.deployment-status == 'failure'
+    steps:
+      - name: Create failure summary
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const summary = `## Deployment Failed
+            
+            **Version:** ${{ inputs.version }}
+            **Commit:** ${{ inputs.commit-sha }}
+            **Timestamp:** ${new Date().toISOString()}
+            
+            Please check the logs for details. Rollback may be required.`;
+            
+            await core.summary
+              .addRaw(summary)
+              .write();
+            
+            core.setFailed('Deployment pipeline failed');
+
+      - name: Update commit status
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: '${{ inputs.commit-sha }}',
+              state: 'failure',
+              description: 'Deployment failed - rollback may be required',
+              context: 'CI/CD Pipeline'
+            });
+            console.error('ALERT: Deployment failed for version ${{ inputs.version }}');
+            console.error('Check the logs above for details');
+            console.error('Rollback may be required');

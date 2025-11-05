@@ -1,0 +1,69 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+      - master
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  deploy-backend:
+    name: Step 1 - Deploy Backend
+    uses: ./.github/workflows/1-deploy-backend.yml
+    secrets:
+      RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
+      BACKEND_URL: ${{ secrets.BACKEND_URL }}
+
+  build-frontend:
+    name: Step 2 - Build Frontend
+    needs: deploy-backend
+    uses: ./.github/workflows/2-build-frontend.yml
+    secrets:
+      BACKEND_URL: ${{ secrets.BACKEND_URL }}
+
+  deploy-frontend:
+    name: Step 3 - Deploy Frontend
+    needs: build-frontend
+    uses: ./.github/workflows/3-deploy-frontend.yml
+    secrets:
+      VPS_HOST: ${{ secrets.VPS_HOST }}
+      VPS_USER: ${{ secrets.VPS_USER }}
+      VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+      VPS_DEPLOY_PATH: ${{ secrets.VPS_DEPLOY_PATH }}
+
+  health-checks:
+    name: Step 4 - Health Checks
+    needs: deploy-frontend
+    uses: ./.github/workflows/4-health-checks.yml
+    secrets:
+      BACKEND_URL: ${{ secrets.BACKEND_URL }}
+      VPS_HOST: ${{ secrets.VPS_HOST }}
+
+  notify-success:
+    name: Step 5 - Notifications
+    needs: health-checks
+    if: success()
+    uses: ./.github/workflows/5-notifications.yml
+    with:
+      deployment-status: 'success'
+      version: ${{ github.ref_name }}
+      commit-sha: ${{ github.sha }}
+    secrets:
+      BACKEND_URL: ${{ secrets.BACKEND_URL }}
+      VPS_HOST: ${{ secrets.VPS_HOST }}
+
+  notify-failure:
+    name: Step 5 - Failure Notification
+    needs: [deploy-backend, build-frontend, deploy-frontend, health-checks]
+    if: failure()
+    uses: ./.github/workflows/5-notifications.yml
+    with:
+      deployment-status: 'failure'
+      version: ${{ github.ref_name }}
+      commit-sha: ${{ github.sha }}
+    secrets:
+      BACKEND_URL: ${{ secrets.BACKEND_URL }}
+      VPS_HOST: ${{ secrets.VPS_HOST }}
