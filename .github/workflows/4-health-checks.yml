@@ -16,15 +16,22 @@ jobs:
       - name: Wait for backend readiness
         uses: nev7n/wait_for_response@v1
         with:
-          url: ${{ secrets.BACKEND_URL }}/api/game
+          url: ${{ secrets.BACKEND_URL }}/
           responseCode: 200
           timeout: 180000
           interval: 10000
 
-      - name: Health Check Backend
-        uses: wei/curl@v1
-        with:
-          args: -f ${{ secrets.BACKEND_URL }}/api/game
+      - name: Health Check Backend Root
+        run: |
+          echo "Checking backend root endpoint..."
+          curl -f ${{ secrets.BACKEND_URL }}/ || exit 1
+          echo "Backend root endpoint is accessible"
+
+      - name: Health Check Backend API
+        run: |
+          echo "Checking backend API endpoint..."
+          curl -f ${{ secrets.BACKEND_URL }}/api/game || exit 1
+          echo "Backend API endpoint is accessible"
 
       - name: Wait for frontend readiness
         uses: nev7n/wait_for_response@v1
@@ -35,13 +42,17 @@ jobs:
           interval: 2000
 
       - name: Health Check Frontend
-        uses: wei/curl@v1
-        with:
-          args: -f http://${{ secrets.VPS_HOST }}/
+        run: |
+          echo "Checking frontend endpoint..."
+          curl -f http://${{ secrets.VPS_HOST }}/ || exit 1
+          echo "Frontend endpoint is accessible"
 
       - name: Log Health Checks Success
         run: |
           echo "SUCCESS: All health checks passed"
           echo "Timestamp: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
-          echo "Backend: ${{ secrets.BACKEND_URL }}"
-          echo "Frontend: http://${{ secrets.VPS_HOST }}/"
+          echo "Backend root: PASSED"
+          echo "Backend API: PASSED"
+          echo "Frontend: PASSED"
+          echo "Backend URL: ${{ secrets.BACKEND_URL }}"
+          echo "Frontend URL: http://${{ secrets.VPS_HOST }}/"
