@@ -63,7 +63,7 @@ jobs:
             ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:${{ secrets.VPS_DEPLOY_PATH }}/
           rsync -avz \
             -e "ssh -o StrictHostKeyChecking=no" \
-            ecosystem.config.js \
+            deployment/ecosystem.config.js \
             ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:${{ secrets.VPS_DEPLOY_PATH }}/
 
       - name: Restart PM2
