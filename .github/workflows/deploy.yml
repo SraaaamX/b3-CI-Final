@@ -13,12 +13,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Trigger Render Deploy
-        run: |
-          curl -X POST "${{ secrets.RENDER_DEPLOY_HOOK }}"
-          if [ $? -ne 0 ]; then
-            echo "Render deployment failed"
-            exit 1
-          fi
+        uses: fjogeleit/http-request-action@v1
+        with:
+          url: ${{ secrets.RENDER_DEPLOY_HOOK }}
+          method: POST
 
   build-and-deploy-frontend:
     name: Build and Deploy Frontend to VPS
@@ -36,35 +34,41 @@ jobs:
           cache-dependency-path: admin-dashboard/package-lock.json
 
       - name: Install dependencies
-        working-directory: admin-dashboard
-        run: npm ci
+        uses: borales/actions-yarn@v5
+        with:
+          cmd: --cwd admin-dashboard install --frozen-lockfile
 
       - name: Create .env file
-        working-directory: admin-dashboard
-        run: echo "VITE_BACKEND_URL=${{ secrets.BACKEND_URL }}" > .env
+        uses: SpicyPizza/create-envfile@v2.0
+        with:
+          envkey_VITE_BACKEND_URL: ${{ secrets.BACKEND_URL }}
+          directory: admin-dashboard
+          file_name: .env
 
       - name: Build frontend
-        working-directory: admin-dashboard
-        run: npm run build
-
-      - name: Setup SSH key
-        uses: webfactory/ssh-agent@v0.9.0
+        uses: borales/actions-yarn@v5
         with:
-          ssh-private-key: ${{ secrets.VPS_SSH_KEY }}
+          cmd: --cwd admin-dashboard build
 
-      - name: Add known hosts
-        run: ssh-keyscan -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
+      - name: Deploy to VPS via rsync
+        uses: burnett01/rsync-deployments@7.0.1
+        with:
+          switches: -avz --delete
+          path: admin-dashboard/dist/
+          remote_path: ${{ secrets.VPS_DEPLOY_PATH }}/
+          remote_host: ${{ secrets.VPS_HOST }}
+          remote_user: ${{ secrets.VPS_USER }}
+          remote_key: ${{ secrets.VPS_SSH_KEY }}
 
-      - name: Deploy to VPS
-        run: |
-          rsync -avz --delete \
-            -e "ssh -o StrictHostKeyChecking=no" \
-            admin-dashboard/dist/ \
-            ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:${{ secrets.VPS_DEPLOY_PATH }}/
-          rsync -avz \
-            -e "ssh -o StrictHostKeyChecking=no" \
-            deployment/ecosystem.config.js \
-            ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:${{ secrets.VPS_DEPLOY_PATH }}/
+      - name: Deploy ecosystem config
+        uses: burnett01/rsync-deployments@7.0.1
+        with:
+          switches: -avz
+          path: deployment/ecosystem.config.js
+          remote_path: ${{ secrets.VPS_DEPLOY_PATH }}/
+          remote_host: ${{ secrets.VPS_HOST }}
+          remote_user: ${{ secrets.VPS_USER }}
+          remote_key: ${{ secrets.VPS_SSH_KEY }}
 
       - name: Restart PM2
         uses: appleboy/ssh-action@v1.0.3
