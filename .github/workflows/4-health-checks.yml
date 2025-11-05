@@ -13,14 +13,6 @@ jobs:
     name: Verify Services Health
     runs-on: ubuntu-latest
     steps:
-      - name: Wait for backend readiness
-        uses: nev7n/wait_for_response@v1
-        with:
-          url: ${{ secrets.BACKEND_URL }}/
-          responseCode: 200
-          timeout: 180000
-          interval: 10000
-
       - name: Health Check Backend
         run: |
           echo "Checking backend endpoint..."
@@ -32,18 +24,10 @@ jobs:
           fi
           echo "Backend is accessible and responding correctly"
 
-      - name: Wait for frontend readiness
-        uses: nev7n/wait_for_response@v1
-        with:
-          url: http://${{ secrets.VPS_HOST }}/
-          responseCode: 200
-          timeout: 30000
-          interval: 2000
-
       - name: Health Check Frontend
         run: |
           echo "Checking frontend endpoint..."
-          RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" http://${{ secrets.VPS_HOST }}/)
+          RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" http://${{ secrets.VPS_HOST }}/healthcheck)
           echo "Frontend HTTP status: $RESPONSE"
           if [ "$RESPONSE" != "200" ]; then
             echo "Frontend health check failed with status $RESPONSE"
@@ -58,4 +42,4 @@ jobs:
           echo "Backend: PASSED (HTTP 200)"
           echo "Frontend: PASSED (HTTP 200)"
           echo "Backend URL: ${{ secrets.BACKEND_URL }}"
-          echo "Frontend URL: http://${{ secrets.VPS_HOST }}/"
+          echo "Frontend URL: http://${{ secrets.VPS_HOST }}/healthcheck"
